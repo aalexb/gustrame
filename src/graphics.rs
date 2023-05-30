@@ -1,15 +1,20 @@
-mod buffer;
 pub mod interface;
+pub mod resmanager;
+pub mod sprite;
+
+mod buffer;
 mod mesh;
 mod window;
+mod texture;
+mod shader;
 
 pub fn create_window(width:u32,height:u32)->impl interface::IWindow {
     window::GlfwWindow::init(width, height)
 }
 
-pub fn gl_render() {
-    
+pub fn gl_render() {    
     pre_render();
+
 }
 
 fn pre_render() {

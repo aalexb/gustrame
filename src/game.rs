@@ -1,5 +1,4 @@
-use crate::graphics::*;
-
+use crate::graphics::{*, resmanager::ResManager, sprite::SpriteRenderer};
 
 pub struct Game{
     state:GameState,
@@ -9,12 +8,15 @@ pub struct Game{
     win:Box<dyn interface::IWindow>,
     delta_time:f64,
     last_frame:f64,
+    resmgr:ResManager,
+    renderer:SpriteRenderer,
 }
 
 impl Game {
     pub fn new(width:u32, height:u32)->Self {
         let window = create_window(width,height);
         gl_load(width as i32,height as i32);
+
         Self { state: GameState::GameActive, 
             keys: [false;1024], width, height, 
             win:Box::new(window),
@@ -25,21 +27,24 @@ impl Game {
         while self.state==GameState::GameActive {
             let current_frame=self.win.get_time();
             self.delta_time=current_frame-self.last_frame;
+
             self.process_input(self.delta_time);
             self.update(self.delta_time);
             self.render();
         }
     }
     pub fn process_input(&mut self,dt:f64) {
-
         for action in self.win.process_input() {
             match action {
                 interface::WinInteractions::Key(num, press) => self.keys[num]=press,
-                interface::WinInteractions::CloseWindow => self.state=GameState::GameWin,
+                interface::WinInteractions::CloseWindow => self.state=GameState::GameWin,                
+                interface::WinInteractions::WinSize(w, h) => {
+                    self.width=w;
+                    self.height=h;
+                }
                 interface::WinInteractions::None => {},
             }
         }
-
     }
     pub fn update(&mut self,dt:f64) {
         
@@ -48,6 +53,7 @@ impl Game {
         gl_render();
         self.win.swap_buffer()
     }
+
     pub fn state(&self)->GameState {
         self.state
     }

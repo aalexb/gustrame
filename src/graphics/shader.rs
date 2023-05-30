@@ -1,6 +1,7 @@
 use std::{ffi::{CString, NulError}, ptr};
 
 use gl::types::*;
+use glam::{Vec2, Vec3};
 pub struct Shader{
     pub id:GLuint,
 }
@@ -65,6 +66,16 @@ impl ShaderProgram {
     pub unsafe fn apply(&self) {
         gl::UseProgram(self.id);
     }
+    unsafe fn loc(&self,name:&str)->GLint {
+        gl::GetUniformLocation(self.id, name.as_ptr().cast())
+    }
+    pub unsafe fn SetMatrix4(&self, name:&str, matrix:&glam::Mat4) {
+        gl::UniformMatrix4fv(self.loc(name), 1, gl::FALSE, &matrix.to_cols_array()[0]);
+    }
+    pub unsafe fn SetVector3f(&self, name:&str, vector:Vec3) {
+        gl::Uniform3f(self.loc(name), vector.x, vector.y, vector.z)
+    }
+
 }
 
 impl Drop for ShaderProgram {

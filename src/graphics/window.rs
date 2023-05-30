@@ -1,6 +1,5 @@
-use glfw::{Context, Glfw, WindowEvent};
-
-use super::interface::{IWindow, WinInteractions};
+use glfw::*;
+use super::interface::*;
 
 pub struct GlfwWindow{
     window:glfw::Window,
@@ -47,8 +46,8 @@ impl GlfwWindow {
                 return  WinInteractions::CloseWindow;
             }
             glfw::WindowEvent::FramebufferSize(w, h)=>{
-                framebuffer_size_callback(&self.window, w, h);
-                WinInteractions::None
+                framebuffer_size_callback( w, h);
+                WinInteractions::WinSize(w as u32, h as u32)
             },
             _=>{WinInteractions::None}
         }
@@ -75,7 +74,7 @@ impl IWindow for GlfwWindow {
     }       
 }
 
-fn framebuffer_size_callback(window:&glfw::Window, width:i32, height:i32) {
+fn framebuffer_size_callback(width:i32, height:i32) {
     unsafe{
         gl::Viewport(0, 0, width, height);
     }    

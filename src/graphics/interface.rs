@@ -7,6 +7,7 @@ pub trait IWindow {
 
 pub enum WinInteractions {
     Key(usize,bool),
+    WinSize(u32,u32),
     CloseWindow,
     None,
 }
