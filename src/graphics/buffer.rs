@@ -29,7 +29,7 @@ impl Buffer {
     }
 }
 
-pub fn buffer_data(ty: BufferType, data: &[u8], usage: GLenum) {
+pub fn buffer_data(ty: BufferType, data: &[f32], usage: GLenum) {
     unsafe {
         gl::BufferData(
             ty as GLenum, 

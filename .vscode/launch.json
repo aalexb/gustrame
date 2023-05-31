@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'rogl'",
+            "name": "Debug executable 'breakout'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=rogl",
-                    "--package=rogl"
+                    "--bin=breakout",
+                    "--package=breakout"
                 ],
                 "filter": {
-                    "name": "rogl",
+                    "name": "breakout",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'rogl'",
+            "name": "Debug unit tests in executable 'breakout'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=rogl",
-                    "--package=rogl"
+                    "--bin=breakout",
+                    "--package=breakout"
                 ],
                 "filter": {
-                    "name": "rogl",
+                    "name": "breakout",
                     "kind": "bin"
                 }
             },

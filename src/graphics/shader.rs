@@ -1,4 +1,4 @@
-use std::{ffi::{CString, NulError}, ptr};
+use std::{ffi::{CString, NulError}};
 
 use gl::types::*;
 use glam::{Vec2, Vec3};
@@ -15,7 +15,7 @@ impl Shader {
         shader.id, 
         1, 
         &source_code.as_ptr(), 
-        ptr::null());
+        std::ptr::null());
         gl::CompileShader(shader.id);
         let mut success = 0;
 
@@ -39,6 +39,7 @@ impl Drop for Shader {
     }
 }
 
+#[derive(Clone)]
 pub struct ShaderProgram{
     pub id:GLuint,
 }
@@ -63,14 +64,24 @@ impl ShaderProgram {
         }
     }
 
-    pub unsafe fn apply(&self) {
+    pub unsafe fn apply(&self)->&Self {
         gl::UseProgram(self.id);
+        return self
     }
+    pub unsafe fn SetInteger(&self,name:&str, value:i32) {
+        gl::Uniform1i(self.loc(name), value);
+    }
+
     unsafe fn loc(&self,name:&str)->GLint {
-        gl::GetUniformLocation(self.id, name.as_ptr().cast())
+        let cname = std::ffi::CString::new(name).expect("CString::new failed");
+        gl::GetUniformLocation(self.id, cname.as_ptr())
     }
     pub unsafe fn SetMatrix4(&self, name:&str, matrix:&glam::Mat4) {
         gl::UniformMatrix4fv(self.loc(name), 1, gl::FALSE, &matrix.to_cols_array()[0]);
+    }
+    pub unsafe fn SetMatrix4f(&self, name:&str, matrix:&[f32;16]) {
+        let ptr=std::mem::transmute(matrix);
+        gl::UniformMatrix4fv(self.loc(name), 1, gl::FALSE, ptr);
     }
     pub unsafe fn SetVector3f(&self, name:&str, vector:Vec3) {
         gl::Uniform3f(self.loc(name), vector.x, vector.y, vector.z)

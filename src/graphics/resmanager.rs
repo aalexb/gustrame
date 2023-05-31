@@ -1,31 +1,35 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, fs::File, io::Read, rc::Rc};
 
 use image::GenericImageView;
 
 use super::{shader::{ShaderProgram, Shader}, texture::Texture2D};
 
 pub struct ResManager{
-    shaders:HashMap<String,ShaderProgram>,
+    shaders:HashMap<String,Rc<ShaderProgram>>,
     textures:HashMap<String,Texture2D>,    
 }
 
 impl ResManager {
-    pub fn new(shaders: HashMap<String,ShaderProgram>, 
-        textures: HashMap<String,Texture2D>) -> Self { 
+    pub fn new() -> Self { 
             Self { shaders:HashMap::new(), textures:HashMap::new() } 
         }
-    pub fn LoadShader(&self, vshader:&str,fshader:&str,name:&str) {
+    pub fn LoadShader(&mut self, vshaderfile:&str,fshaderfile:&str,name:&str) {
+        let mut vshader=String::new();
+        let mut fshader=String::new();
+        ResManager::loadshaderfromfile(vshaderfile, &mut vshader);
+        ResManager::loadshaderfromfile(fshaderfile, &mut fshader);
         unsafe{
             let shs=[
-                Shader::new(vshader, gl::VERTEX_SHADER).unwrap(),
-                Shader::new(fshader, gl::FRAGMENT_SHADER).unwrap()];  
-            self.shaders.insert(String::from_str(name).unwrap(), ShaderProgram::new(&shs).unwrap());          
+                Shader::new(vshader.as_str(), gl::VERTEX_SHADER).unwrap(),
+                Shader::new(fshader.as_str(), gl::FRAGMENT_SHADER).unwrap()];  
+            self.shaders.insert(String::from_str(name).unwrap(),Rc::new( ShaderProgram::new(&shs).unwrap()));          
         }       
     }
-    pub fn GetShader(&self, name:&str)->ShaderProgram {
-        *self.shaders.get(name).unwrap().to_owned()
+    pub fn GetShader(&self, name:&str)->Rc<ShaderProgram> {
+        self.shaders.get(name).unwrap().clone()
+        
     }
-    pub fn LoadTexture(&self,file:&str,alpha:bool, name:&str) {
+    pub fn LoadTexture(&mut self,file:&str,alpha:bool, name:&str) {
         self.textures.insert(String::from_str(name).unwrap(), self.loadtexturefromfile(file,alpha));
     }
 
@@ -41,8 +45,15 @@ impl ResManager {
         return texture
     }
 
-    pub fn GetTexture(&self, name:&str)->Texture2D {
-        *self.textures.get(name).unwrap().to_owned()
+    pub fn GetTexture(&self, name:&str)->&Texture2D {
+        self.textures.get(name).unwrap().to_owned()
     }
+
+    fn loadshaderfromfile(ShaderFile:&str,buf:&mut String) {
+        let mut file = File::open(ShaderFile).unwrap();
+        let mut s = String::new();
+        let x=file.read_to_string(buf).unwrap();
+    }
+
 }
 

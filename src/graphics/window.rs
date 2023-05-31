@@ -12,7 +12,7 @@ impl GlfwWindow {
         glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
         glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
         glfw.window_hint(glfw::WindowHint::Resizable(false));
-        glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
+
         let (mut window, events) = glfw
         .create_window(
             width, 

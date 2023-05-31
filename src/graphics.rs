@@ -19,7 +19,7 @@ pub fn gl_render() {
 
 fn pre_render() {
     unsafe{
-        gl::ClearColor(0.0, 0.0, 0.0, 0.0);
+        gl::ClearColor(0.2, 0.2, 0.3, 0.0);
         gl::Clear(gl::COLOR_BUFFER_BIT);
     }
 }
@@ -29,4 +29,8 @@ pub fn gl_load(width:i32, height:i32) {
         gl::Enable(gl::BLEND);
         gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     } 
+}
+pub fn draw_circle() {
+    let kru=mesh::Mesh::circle(110.8);
+    kru.draw();
 }

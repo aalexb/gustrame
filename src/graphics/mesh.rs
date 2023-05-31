@@ -57,7 +57,7 @@ impl Mesh{
         for i in 0..=approx {
             
             let angle = (i as f32)*2.0*PI/(approx as f32);
-            let pos = Vec3::new(radius*angle.cos()*9.0/16.0,radius*angle.sin(), 0.0);
+            let pos = Vec3::new(radius*angle.cos(),radius*angle.sin(), 0.0);
             let color_bit = (angle.sin()+1.0)/2.0;
             let color = Vec3::new(color_bit,color_bit,0.0);
             mesh.vertices.push(Vertex { pos, color});
