@@ -1,3 +1,7 @@
+use std::rc::Rc;
+
+use super::texture::Texture2D;
+
 pub trait IWindow {
     fn process_input(&mut self)->Vec<WinInteractions>;
     fn swap_buffer(&mut self);
@@ -10,4 +14,8 @@ pub enum WinInteractions {
     WinSize(u32,u32),
     CloseWindow,
     None,
+}
+
+pub trait ITextureCache{
+    fn get_texture(&self,name:&str)->Rc<Texture2D>;
 }

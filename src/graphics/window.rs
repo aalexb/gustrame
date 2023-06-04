@@ -33,7 +33,7 @@ impl GlfwWindow {
                 if key==glfw::Key::Escape&&action==glfw::Action::Press {
                     return WinInteractions::CloseWindow
                 }
-                if  (key as usize)>=0&&(key as usize)<1024{
+                if (key as usize)>=0&&(key as usize)<1024 {
                     if action==glfw::Action::Press {
                         return WinInteractions::Key(key as usize, true)
                     } else if action==glfw::Action::Release {

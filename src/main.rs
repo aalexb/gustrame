@@ -5,5 +5,6 @@ const HEIGHT:u32=720;
 
 fn main() {
     let mut game = Game::new(WIDTH,HEIGHT);
+    game.init();
     game.run();
 }

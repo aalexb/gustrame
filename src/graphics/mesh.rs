@@ -74,12 +74,14 @@ impl Mesh{
         }
     }
 }
+
 pub enum DrawType {
     TriStrip=gl::TRIANGLE_STRIP as isize,
     Tri=gl::TRIANGLES as isize,
     TriFan=gl::TRIANGLE_FAN as isize,
 
 }
+
 pub struct Vertex{
     pos:Vec3,
     color:Vec3

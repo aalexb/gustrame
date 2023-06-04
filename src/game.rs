@@ -1,8 +1,18 @@
-use std::rc::Rc;
+use std::{rc::Rc, fs::File, io::{BufReader, BufRead}};
 
-use glam::{Vec2, vec3, Vec3};
+use glam::{Vec2, vec3, Vec3, vec2};
+mod gamelevel;
+mod gameobject;
+mod utils;
 
-use crate::graphics::{*, resmanager::ResManager, sprite::SpriteRenderer};
+use crate::{graphics::{*, sprite::SpriteRenderer, texture::Texture2D, interface::ITextureCache}, resmanager::ResManager};
+
+use self::{gamelevel::GameLevel, gameobject::{GameObject, Movable, Ball}, utils::{AABB, check_collision}};
+
+const PLAYER_SIZE:Vec2=vec2(100.0,20.0);
+const PLAYER_VELOCITY:f32 = 1000.0;
+const INIT_BALL_VELOCITY:Vec2 = vec2(100.0,-350.0);
+const BALL_RADIUS:f32 = 12.5;
 
 pub struct Game{
     state:GameState,
@@ -10,10 +20,13 @@ pub struct Game{
     width:u32,
     height:u32,
     win:Box<dyn interface::IWindow>,
-    delta_time:f64,
     last_frame:f64,
     resmgr:ResManager,
     renderer:SpriteRenderer,
+    levels:Vec<GameLevel>,
+    level:u32,
+    player:GameObject,
+    ball:Ball,
 }
 
 impl Game{
@@ -23,31 +36,67 @@ impl Game{
 
         let mut resmgr = ResManager::new();
 
-        resmgr.LoadShader("shader.vert", "shader.frag", "sprite");
-        resmgr.LoadShader("simpleshader.vert", "simpleshader.frag", "simple");
+        resmgr.load_shader("shader.vert", "shader.frag", "sprite");
+        resmgr.load_shader("simpleshader.vert", "simpleshader.frag", "simple");
         
         
-        resmgr.LoadTexture("awesomeface.png", true, "face");
-        let mut renderer = SpriteRenderer::new(resmgr.GetShader("sprite"));
-        renderer.initRenderData();
+        
+        let mut renderer = SpriteRenderer::new(resmgr.get_shader("sprite"));
+        renderer.init_render_data();
 
         Self { state: GameState::GameActive, 
             keys: [false;1024], width, height, 
-            win:Box::new(window),
-            delta_time:0.0,last_frame:0.0,resmgr,renderer}
+            win:Box::new(window),last_frame:0.0,resmgr,renderer,levels:Vec::new(),level: 0,
+        player:GameObject::default(),ball:Ball::default()}
+    }
+
+    pub fn init(&mut self) {
+        self.resmgr.load_texture("background.jpg", false, "background");
+        self.resmgr.load_texture("awesomeface.png", true, "ball");
+        self.resmgr.load_texture("block.png", true, "block");
+        self.resmgr.load_texture("block_solid.png", true, "block_solid");
+        self.resmgr.load_texture("paddle.png", true, "paddle");
+
+        let mut one = GameLevel::new();
+        one.load("one.lvl", self.width, self.height/2, &self.resmgr);
+        let mut two = GameLevel::new();
+        two.load("two.lvl", self.width, self.height/2, &self.resmgr);
+        let mut three = GameLevel::new();
+        three.load("three.lvl", self.width, self.height/2, &self.resmgr);
+        let mut four = GameLevel::new();
+        two.load("two.lvl", self.width, self.height/2, &self.resmgr);
+
+        self.levels.push(one);
+        self.levels.push(two);
+        self.levels.push(three);
+        self.levels.push(four);
+
+
+        let player_pos=vec2(
+            self.width as f32/2.0-PLAYER_SIZE.x/2.0,
+            self.height as f32-PLAYER_SIZE.y);
+        self.player=GameObject::new(player_pos, PLAYER_SIZE, vec2(PLAYER_VELOCITY,0.0), Vec3::ONE, 
+            self.resmgr.get_texture("paddle"));
+
+        let ball_pos=player_pos+vec2(PLAYER_SIZE.x/2.0-BALL_RADIUS,
+            -BALL_RADIUS*2.0);
+        self.ball=Ball::new(ball_pos, BALL_RADIUS, INIT_BALL_VELOCITY, self.resmgr.get_texture("ball"));
+
     }
 
     pub fn run(&mut self) {
         while self.state==GameState::GameActive {
             let current_frame=self.win.get_time();
-            self.delta_time=current_frame-self.last_frame;
-
-            self.process_input(self.delta_time);
-            self.update(self.delta_time);
+            let delta_time=current_frame-self.last_frame;
+            self.last_frame=current_frame;
+            self.process_input(delta_time);
+            self.update(delta_time);
             self.render();
+            println!("dt={},cur_frame={},lastframe={}",delta_time,current_frame,self.last_frame);
         }
     }
-    pub fn process_input(&mut self,dt:f64) {
+    
+    fn process_input(&mut self,dt:f64) {
         for action in self.win.process_input() {
             match action {
                 interface::WinInteractions::Key(num, press) => self.keys[num]=press,
@@ -59,46 +108,67 @@ impl Game{
                 interface::WinInteractions::None => {},
             }
         }
+        if self.state==GameState::GameActive {
+            let velocity = PLAYER_VELOCITY*dt as f32;
+            if self.keys[65] {
+                if self.player.position().x>=0.0 {
+                    self.player.set_position_x(self.player.position().x-velocity);
+                    if self.ball.stuck {
+                        self.ball.obj.set_position_x(self.player.position().x-velocity)
+                    }
+                }
+            }
+            if self.keys[68] {
+                if self.player.position().x<=self.width as f32-self.player.size().x {
+                    self.player.set_position_x(self.player.position().x+velocity);
+                    if self.ball.stuck {
+                        self.ball.obj.set_position_x(self.player.position().x+velocity)
+                    }
+                }
+            }
+            if self.keys[32] {
+                self.ball.stuck=false;
+            }
+        }
     }
-    pub fn update(&mut self,dt:f64) {
-        
+    
+    fn update(&mut self,dt:f64) {
+        self.ball.do_move(dt as f32, self.width);
+        self.do_collisions();
     }
-    pub fn render(&mut self) {
+    
+    fn render(&mut self) {
 
         gl_render();
-        let tupovec=Vec3::new(0.8,0.0,0.0);
-        let trans = vec3(400.0,300.0,0.0);
-
-        let projection = glam::Mat4::orthographic_rh_gl(0.0, self.width as f32, 0.0, self.height as f32, -1.0, 1.0);
-        let model=glam::Mat4::IDENTITY*glam::Mat4::from_translation(trans);
+        let projection = glam::Mat4::orthographic_rh_gl(0.0, self.width as f32, self.height as f32, 0.0, -1.0, 1.0);
         unsafe{
-            
-            self.resmgr.GetShader("simple").apply().SetMatrix4("projection", &projection);
-            self.resmgr.GetShader("simple").SetMatrix4("model", &model);
-            self.resmgr.GetShader("simple").SetVector3f("tupovec", tupovec);
+            self.resmgr.get_shader("sprite").apply().set_integer("image", 0);
+            self.resmgr.get_shader("sprite").set_matrix4("projection", &projection);            
         }
-        
-        draw_circle();                
-        
-        unsafe{
-            self.resmgr.GetShader("sprite").apply().SetInteger("image", 0);
-            self.resmgr.GetShader("sprite").SetMatrix4("projection", &projection);            
+        if self.state==GameState::GameActive {
+            self.renderer.draw_sprite(self.resmgr.get_texture("background").as_ref(), vec2(0.0,0.0), vec2(self.width as f32,self.height as f32), 0.0, Vec3::ONE);
+            self.levels[self.level as usize].draw(&self.renderer);
         }
-
-        self.renderer.DrawSprite(
-            &self.resmgr.GetShader("sprite"),
-            self.resmgr.GetTexture("face"), 
-            Vec2::new(200.0, 200.0), 
-            Vec2::new(300.0, 400.0), 
-            45.0, 
-            vec3(0.0, 1.0, 0.0));
-
+        self.player.draw(&self.renderer);
+        self.ball.obj.draw(&self.renderer);
         self.win.swap_buffer();
 
     }
 
-    pub fn state(&self)->GameState {
+    fn state(&self)->GameState {
         self.state
+    }
+
+    fn do_collisions(&mut self) {
+        for boxy in &mut self.levels[self.level as usize].bricks {
+            if !boxy.destroyed() {
+                if check_collision(&self.ball, boxy) {
+                    if !boxy.is_solid() {
+                        boxy.set_destroyed(true)
+                    }
+                }
+            }
+        }
     }
 }
 #[derive(Clone,Copy,PartialEq)]
@@ -107,3 +177,11 @@ pub enum GameState {
     GameMenu,
     GameWin,
 }
+
+pub enum Direction{
+    UP,
+    RIGHT,
+    DOWN,
+    LEFT,
+}
+

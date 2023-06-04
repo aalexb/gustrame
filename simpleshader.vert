@@ -7,5 +7,5 @@ uniform mat4 model;
 out vec3 from_color;
 void main() {
     from_color=col;
-    gl_Position =projection *model*  vec4(pos, 1.0);
+    gl_Position =projection *model*  vec4(pos.xy, 0.0, 1.0);
 }

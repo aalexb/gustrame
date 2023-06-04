@@ -9,14 +9,14 @@ use super::{texture::Texture2D, shader::ShaderProgram, buffer::{Buffer, BufferTy
 
 pub struct SpriteRenderer{
     shader:Rc<ShaderProgram>,
-    quadVAO: GLuint
+    quad_vao: GLuint
 }
 
 impl SpriteRenderer{
     pub fn new(shader:Rc<ShaderProgram>)-> Self{
-        Self{shader,quadVAO:0}        
+        Self{shader,quad_vao:0}        
     }
-    pub fn initRenderData(&mut self) {
+    pub fn init_render_data(&mut self) {
 
         let vertices:[f32;24]=[
             0.0, 1.0, 0.0, 1.0,
@@ -27,20 +27,21 @@ impl SpriteRenderer{
             1.0, 1.0, 1.0, 1.0,
             1.0, 0.0, 1.0, 0.0
         ];
-        let vbo=Buffer::new().unwrap();
-        vbo.bind(BufferType::Array);
-        buffer_data(BufferType::Array, &vertices, gl::STATIC_DRAW);
+
         unsafe{
-            gl::BindVertexArray(self.quadVAO);
+            gl::GenVertexArrays(1, &mut self.quad_vao);
+            gl::BindVertexArray(self.quad_vao);
+            let mut vbo=0;
+            gl::GenBuffers(1, &mut vbo);
+            gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+            gl::BufferData(gl::ARRAY_BUFFER, (vertices.len()*size_of::<f32>()).try_into().unwrap(), vertices.as_ptr().cast(), gl::STATIC_DRAW);
+            gl::VertexAttribPointer(0, 4, gl::FLOAT, gl::FALSE, 0, 0 as *const _);
             gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(0, 4, gl::FLOAT, gl::FALSE, (4*size_of::<f32>()).try_into().unwrap(), 0 as *const _);
-            vbo._unbind(BufferType::Array);
             gl::BindVertexArray(0);
-        }
-        
+        }        
     }
 
-    pub fn DrawSprite(&self,shader:&ShaderProgram,texture:&Texture2D, position:Vec2,size:Vec2,rotate:f32,color:Vec3) {
+    pub fn draw_sprite(&self,texture:&Texture2D, position:Vec2,size:Vec2,rotate:f32,color:Vec3) {
         unsafe{
         self.shader.apply();
         }
@@ -54,8 +55,8 @@ impl SpriteRenderer{
         let model = model*glam::Mat4::from_scale(glam::vec3(size.x, size.y, 1.0));
         
         unsafe{
-        shader.SetMatrix4("model", &model);
-        shader.SetVector3f("spriteColor", color);
+        self.shader.set_matrix4("model", &model);
+        self.shader.set_vector3f("spriteColor", color);
         }
         unsafe{
             gl::ActiveTexture(gl::TEXTURE0);
@@ -64,7 +65,7 @@ impl SpriteRenderer{
         texture.bind();
 
         unsafe{
-            gl::BindVertexArray(self.quadVAO);
+            gl::BindVertexArray(self.quad_vao);
             gl::DrawArrays(gl::TRIANGLES, 0, 6);
             gl::BindVertexArray(0);
         }

@@ -1,12 +1,11 @@
 pub mod interface;
-pub mod resmanager;
 pub mod sprite;
 
 mod buffer;
 mod mesh;
 mod window;
-mod texture;
-mod shader;
+pub mod texture;
+pub mod shader;
 
 pub fn create_window(width:u32,height:u32)->impl interface::IWindow {
     window::GlfwWindow::init(width, height)
@@ -29,8 +28,4 @@ pub fn gl_load(width:i32, height:i32) {
         gl::Enable(gl::BLEND);
         gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     } 
-}
-pub fn draw_circle() {
-    let kru=mesh::Mesh::circle(110.8);
-    kru.draw();
 }

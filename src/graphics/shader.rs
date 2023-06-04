@@ -1,7 +1,7 @@
-use std::{ffi::{CString, NulError}};
+use std::ffi::{CString, NulError};
 
 use gl::types::*;
-use glam::{Vec2, Vec3};
+use glam::Vec3;
 pub struct Shader{
     pub id:GLuint,
 }
@@ -68,7 +68,7 @@ impl ShaderProgram {
         gl::UseProgram(self.id);
         return self
     }
-    pub unsafe fn SetInteger(&self,name:&str, value:i32) {
+    pub unsafe fn set_integer(&self,name:&str, value:i32) {
         gl::Uniform1i(self.loc(name), value);
     }
 
@@ -76,14 +76,14 @@ impl ShaderProgram {
         let cname = std::ffi::CString::new(name).expect("CString::new failed");
         gl::GetUniformLocation(self.id, cname.as_ptr())
     }
-    pub unsafe fn SetMatrix4(&self, name:&str, matrix:&glam::Mat4) {
+    pub unsafe fn set_matrix4(&self, name:&str, matrix:&glam::Mat4) {
         gl::UniformMatrix4fv(self.loc(name), 1, gl::FALSE, &matrix.to_cols_array()[0]);
     }
-    pub unsafe fn SetMatrix4f(&self, name:&str, matrix:&[f32;16]) {
-        let ptr=std::mem::transmute(matrix);
-        gl::UniformMatrix4fv(self.loc(name), 1, gl::FALSE, ptr);
+
+    pub unsafe fn _set_matrix4f(&self, name:&str, matrix:&[f32]) {
+        gl::UniformMatrix4fv(self.loc(name), 1, gl::FALSE, matrix.as_ptr());
     }
-    pub unsafe fn SetVector3f(&self, name:&str, vector:Vec3) {
+    pub unsafe fn set_vector3f(&self, name:&str, vector:Vec3) {
         gl::Uniform3f(self.loc(name), vector.x, vector.y, vector.z)
     }
 
